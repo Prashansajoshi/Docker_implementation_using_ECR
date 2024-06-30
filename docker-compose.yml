@@ -4,7 +4,7 @@ services:
   web:
     build: .
     container_name: node_app
-    image: prashansa_nodejss
+    image: prashansa_nodejs
     ports:
       - "8000:8000"
     volumes:
