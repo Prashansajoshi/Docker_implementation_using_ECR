@@ -120,7 +120,7 @@ jobs:
 
     docker_build:
       runs-on: ubuntu-latest
-      # needs: setup_aws_terraform
+      needs: setup_ansible
       steps:
         
         - name: Configure AWS Credentials
