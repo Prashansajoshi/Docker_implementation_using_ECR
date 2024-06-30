@@ -1,0 +1,34 @@
+- name: Install required packages
+  apt:
+    name: 
+      - apt-transport-https  # enables the APT package manager to use HTTPS for downloading packages.
+      - ca-certificates  # contains a set of CA (Certificate Authority) certificates.
+      - curl  # Curl is a command-line tool for transferring data with URLs.
+      - software-properties-common  #  provides an abstraction for managing software repositories in Debian-based distributions.
+    state: present
+    update_cache: yes
+
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repository
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+    state: present
+
+- name: Update APT package index
+  apt:
+    update_cache: yes
+
+- name: Install Docker
+  apt:
+    name: docker-ce
+    state: present
+
+- name: Start and enable Docker service
+  systemd:
+    name: docker
+    state: started
+    enabled: yes

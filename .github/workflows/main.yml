@@ -1,0 +1,262 @@
+name: terraform_infrastructure 
+on:
+    workflow_dispatch:
+    push:
+      branches: [ "stage" ] 
+    pull_request:
+      branches: [ "main" ] 
+
+env:
+    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}  
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  
+    AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }} 
+    AWS_DEFAULT_REGION: us-east-1
+
+jobs:
+    terraform_infrastructure:
+
+      runs-on: ubuntu-latest 
+      steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure aws credentials
+        uses: aws-action/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+
+      - name: Echo Hello World   
+        run: aws sts get-caller-identity
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Version
+        run: echo "Terraform version=$(terraform --version)"
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform
+
+      - name: Terraform Plan
+        run: terraform plan
+        working-directory: terraform
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve
+        working-directory: terraform 
+
+    #   - name: Terraform Destroy
+    #     run: terraform destroy
+    #     working-directory: terraform 
+
+
+
+    setup_ansible:
+        runs-on: ubuntu-latest
+        needs: terraform_infrastructure 
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+            aws-region: us-east-1
+        # - name: Install ansible requirements
+        #   run: pip3 install -r ansible/requirements.txt
+
+        - uses: actions/setup-python@v4
+          with:
+            python-version: "pypy3.10"
+
+        - name: Install boto 3
+          run: |
+            which python
+            source /opt/pipx/venvs/ansible-core/bin/activate
+            python3 -m pip install boto3
+            python3 -m pip install botocore
+
+        - name: Check ansible version
+          run: |
+            ansible --version
+
+        - name: Wait
+          run: |
+            sleep 2
+
+        - name: Install Tree
+          run: sudo apt install tree -y
+
+        - name: Tree
+          run: tree -L 3
+
+        - name: Ansible Inventory
+          run: cd ansible && ansible-inventory -i aws_ec2.yml --graph 
+
+        # - name: Ansible Playbook
+        #   run: |
+        #     ansible-playbook ansible/configure.yml -i ansible/aws_ec2.yml -v
+
+        # - name: ansible graph
+        #   run: |
+        #     ansible all --list-hosts &&
+        #     ansible-inventory -i aws_ec2.yaml --graph -vvv
+        #   working-directory: ansible
+
+        - name: Run Ansible Playbook
+          run: ansible-playbook -i aws_ec2.yml configure.yml
+          working-directory: ansible
+          env:
+            ANSIBLE_HOST_KEY_CHECKING: false
+
+
+    docker_build:
+      runs-on: ubuntu-latest
+      # needs: setup_aws_terraform
+      steps:
+        
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+            aws-region: us-east-1
+
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Login to Amazon ECR
+          id: login-ecr
+          uses: aws-actions/amazon-ecr-login@v2
+
+        - name: Build, tag, and push docker image to Amazon ECR
+          env:
+            REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+            REPOSITORY: prashansa_ecr
+            IMAGE_TAG: ${{ github.sha }}
+          run: |
+            docker-compose build
+            docker tag prashansa_nodejs $REGISTRY/$REPOSITORY:node
+            docker tag prashansa_nginx $REGISTRY/$REPOSITORY:nginx
+            docker push $REGISTRY/$REPOSITORY:node
+            docker push $REGISTRY/$REPOSITORY:nginx
+
+
+
+    # docker_built:
+    #     runs-on: ubuntu-latest
+    #     needs: setup_ansible
+    #     steps:
+    #     - name: Checkout
+    #       uses: actions/checkout@v4
+
+    #     - name: Configure AWS Credentials
+    #       uses: aws-actions/configure-aws-credentials@v4
+    #       with:
+    #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+    #         aws-region: us-east-1
+
+    #     - name: Checkout repository
+    #       uses: actions/checkout@v2
+
+    #     - name: Set up Docker Buildx
+    #       uses: docker/setup-buildx-action@v2
+
+    #     # - name: Login to DockerHub
+    #     #   uses: docker/login-action@v3
+    #     #   with:
+    #     #     username: ${{ secrets.DOCKER_USERNAME }}
+    #     #     password: ${{ secrets.DOCKER_PASSWORD }}
+
+    #     # - name: Build and Push Docker image
+    #     #   uses: docker/build-push-action@v3
+    #     #   with:
+    #     #     context: .
+    #     #     push: true
+    #     #     tags: username/repository:tag
+
+    #     - name: Build Docker Image
+    #       run: docker build -t prashansa-nodejs-app:001 .
+
+    #     - name: Save docker image
+    #       run: docker save -o prashansa-nodejs-app.tar prashansa-nodejs-app:001
+
+    #     - name: Ensure boto3 and botocore modules are installed
+    #       run : pip3 install boto3 botocore
+
+    #     - name: Upload tar docker image to S3
+    #       run: aws s3 cp prashansa-nodejs-app.tar s3://prashansa-s3-bucket/prashansa-nodejs-app.tar
+
+
+
+    # download_build:
+    #     runs-on: ubuntu-latest
+    #     needs: docker_built
+    #     steps:
+    #     - name: Ensure boto3 and botocore modules are installed
+    #       run : pip3 install boto3 botocore
+
+    #     - name: Configure AWS Credentials
+    #       uses: aws-actions/configure-aws-credentials@v4
+    #       with:
+    #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+    #         aws-region: us-east-1
+
+    #     - name: Install awscli
+    #       uses: adexltd/aws-ssm-send-command@master
+    #       id: install-awscli
+    #       with:
+    #         aws-region: us-east-1
+    #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+    #         instance-ids: ${{ secrets.INSTANCE_IDS}}
+
+    #         command : |
+    #           sudo apt install unzip
+    #           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" 
+    #           unzip awscliv2.zip
+    #           sudo ./aws/install
+      
+
+
+    # upload_to_ec2:
+    #     runs-on: ubuntu-latest
+    #     needs: download_build
+    #     steps:
+    #     - name: Configure AWS Credentials
+    #       uses: aws-actions/configure-aws-credentials@v4
+    #       with:
+    #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+    #         aws-region: us-east-1
+
+    #     - name: AWS SSM Send-Command
+    #       uses: adexltd/aws-ssm-send-command@master
+    #       id: transfer-code
+    #       with:
+    #         aws-region: us-east-1
+    #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+    #         instance-ids: ${{ secrets.INSTANCE_IDS }}
+  
+    #         working-directory: /home/ubuntu/
+    #         command: |
+    #           aws s3 cp s3://prashansa-s3-bucket/prashansa-nodejs-app.tar /home/ubuntu/
+    #           sudo docker load --input prashansa-nodejs-app.tar
+    #           sudo docker run -d -p 80:8000 --name node_app_1 prashansa-nodejs-app:001

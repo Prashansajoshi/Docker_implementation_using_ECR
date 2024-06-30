@@ -1,0 +1,44 @@
+---
+- name: Hosting Web App From Ansible SSM
+  hosts: Dev
+  # all, localhost, ec2 and other hosts that we gonna set as a host 
+  become: true
+  gather_facts: true
+  #becomes true indicates that you are acting as a root user 
+
+  connection: aws_ssm
+  vars:
+    ansible_connection: aws_ssm
+    ansible_aws_ssm_bucket_name: 8586-terraform-state
+    ansible_aws_ssm_region: us-east-1
+    ansible_aws_ssm_s3_addressing_style: virtual
+    ssm_timeout: 3600
+    
+    DB_SERVER: terraform-20240621052304131800000002.cmuokqciitb8.us-east-1.rds.amazonaws.com
+    DB_USERNAME: test_user
+    DB_PASSWORD: test_0000
+    DB_NAME: test_db
+    DB_PORT: 3306
+
+    local_dir: /home/ubuntu/Node_Project/frontend/dist
+    bucket: prashansa-s3-bucket
+    s3_prefix: dist
+    region: us-east-1
+    instance_id: 
+
+  tasks:
+  - name: Update && Updgrade
+    apt:
+      update_cache: yes
+      cache_valid_time: 86400
+
+  - name: Updgrade All Package
+    apt:
+      upgrade: dist
+
+  roles: 
+    
+    - docker
+
+
+
