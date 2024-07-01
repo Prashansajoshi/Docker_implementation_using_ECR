@@ -65,3 +65,7 @@ module "s3_bucket" {
   ignore_public_acls       = var.ignore_public_acls
   restrict_public_buckets  = var.restrict_public_buckets
 }
+
+module "ecr" {
+    source = "./modules/ecr"
+}
