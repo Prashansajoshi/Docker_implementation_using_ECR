@@ -58,6 +58,11 @@ resource "aws_iam_role_policy_attachment" "attach_s3_read_only_access" {
   policy_arn = data.aws_iam_policy.s3_read_only_access.arn
 }
 
+resource "aws_iam_role_policy_attachment" "attach_ecr_policy" {
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.ecr_policy.arn
+}
+
 resource "aws_iam_instance_profile" "this" {
   name = "prashansa_iam_aws_instance"
   role = aws_iam_role.this.name
