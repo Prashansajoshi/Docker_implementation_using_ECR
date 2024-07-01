@@ -200,36 +200,36 @@ jobs:
 
 
 
-    # download_build:
-    #     runs-on: ubuntu-latest
-    #     needs: docker_built
-    #     steps:
-    #     - name: Ensure boto3 and botocore modules are installed
-    #       run : pip3 install boto3 botocore
+    download_build:
+        runs-on: ubuntu-latest
+        needs: docker_build
+        steps:
+        - name: Ensure boto3 and botocore modules are installed
+          run : pip3 install boto3 botocore
 
-    #     - name: Configure AWS Credentials
-    #       uses: aws-actions/configure-aws-credentials@v4
-    #       with:
-    #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-    #         aws-region: us-east-1
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+            aws-region: us-east-1
 
-    #     - name: Install awscli
-    #       uses: adexltd/aws-ssm-send-command@master
-    #       id: install-awscli
-    #       with:
-    #         aws-region: us-east-1
-    #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-    #         instance-ids: ${{ secrets.INSTANCE_IDS}}
+        - name: Install awscli
+          uses: adexltd/aws-ssm-send-command@master
+          id: install-awscli
+          with:
+            aws-region: us-east-1
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+            instance-ids: ${{ secrets.INSTANCE_IDS}}
 
-    #         command : |
-    #           sudo apt install unzip
-    #           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" 
-    #           unzip awscliv2.zip
-    #           sudo ./aws/install
+            command : |
+              sudo apt install unzip
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" 
+              unzip awscliv2.zip
+              sudo ./aws/install
       
 
 
