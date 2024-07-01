@@ -200,7 +200,7 @@ jobs:
 
 
 
-    download_build:  ###
+    installing_aws_cli:  
         runs-on: ubuntu-latest
         needs: docker_build
         steps:
@@ -230,6 +230,42 @@ jobs:
               curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" 
               unzip awscliv2.zip
               sudo ./aws/install
+
+
+    configure_docker:
+      runs-on: ubuntu-latest
+      needs: installing_aws_cli
+      steps:
+        - name: Ensure boto3 and botocore modules are installed
+          run : pip3 install boto3 botocore
+  
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+            aws-region: us-east-1
+
+        - name: AWS SSM Send-Command
+          uses: adexltd/aws-ssm-send-command@master
+          id: docker-pull
+          with:
+            aws-region: us-east-1
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+            instance-ids: ${{ secrets.INSTANCE_IDS}}
+
+            working-directory: /home/ubuntu/
+            command: |
+              sudo aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 426857564226.dkr.ecr.us-east-1.amazonaws.com
+              sudo docker pull 426857564226.dkr.ecr.us-east-1.amazonaws.com/prashansa_ecr:nginx
+              sudo docker pull 426857564226.dkr.ecr.us-east-1.amazonaws.com/prashansa_ecr:nodejs
+              sudo docker network create node_nginx_network
+              sudo docker run -d -p 8000:8000 --name node_1 --network node_nginx_network 426857564226.dkr.ecr.us-east-1.amazonaws.com/prashansa_ecr:node
+              sudo docker run -d -p 80:80 --name nginx_1 --network node_nginx_network 426857564226.dkr.ecr.us-east-1.amazonaws.com/prashansa_ecr:nginx
+    
       
 
 

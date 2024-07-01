@@ -12,6 +12,14 @@ resource "aws_security_group" "prashansa_sg" {
   }
 
   ingress{
+    description = "prashansa security group from terraform http"
+    cidr_blocks = [var.all_cidr_block]
+    from_port   = 8000
+    protocol = "tcp"
+    to_port     = 8000
+  }
+
+  ingress{
     description = "prashansa security group from terraform ssh"
     cidr_blocks   = [var.all_cidr_block]
     from_port   = 22
