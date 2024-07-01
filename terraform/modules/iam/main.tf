@@ -22,6 +22,32 @@ data "aws_iam_policy" "s3_read_only_access" {
   arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
 }
 
+resource "aws_iam_policy" "ecr_policy" {
+  name        = "ecr_policy"
+  description = "Allow access to ECR"
+  policy      = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        "Sid": "AllowPushPull",
+        Effect   = "Allow"
+        Action   = [
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:CompleteLayerUpload",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:InitiateLayerUpload",
+          "ecr:PutImage",
+          "ecr:UploadLayerPart",
+          "ecr:GetAuthorizationToken",
+          "ecr:ListImages"
+        ]
+        Resource = "*"
+      },
+    ]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "role_policy_attachment_SSM" {
   role       = aws_iam_role.this.name
   policy_arn = data.aws_iam_policy.aws_managed_policy.arn
