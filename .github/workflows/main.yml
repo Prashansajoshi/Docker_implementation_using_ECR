@@ -144,10 +144,10 @@ jobs:
             REPOSITORY: prashansa_ecr
             IMAGE_TAG: ${{ github.sha }}
           run: |
-            docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+            docker-compose build
             docker tag prashansa_nodejs $REGISTRY/$REPOSITORY:nodejs
             docker tag prashansa_nginx $REGISTRY/$REPOSITORY:nginx
-            docker push $REGISTRY/$REPOSITORY:node
+            docker push $REGISTRY/$REPOSITORY:nodejs
             docker push $REGISTRY/$REPOSITORY:nginx
 
 
