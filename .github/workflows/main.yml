@@ -145,7 +145,7 @@ jobs:
             IMAGE_TAG: ${{ github.sha }}
           run: |
             docker-compose build
-            docker tag prashansa_nodejs $REGISTRY/$REPOSITORY:node
+            docker tag prashansa_nodejs $REGISTRY/$REPOSITORY:nodejs
             docker tag prashansa_nginx $REGISTRY/$REPOSITORY:nginx
             docker push $REGISTRY/$REPOSITORY:node
             docker push $REGISTRY/$REPOSITORY:nginx

@@ -1,12 +1,17 @@
-version: '3.8'
-
+version: "3.8"
 services:
-  web:
-    build: .
-    container_name: node_app
-    image: prashansa_nodejs
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/usr/src/app
-    working_dir: /usr/src/app
+    nodejs:
+        build:
+            context: ./app
+        image: "prashansa_nodejs"
+        ports:
+            - "8000:8000"
+    nginx:
+        restart: always
+        image: "prashansa_nginx"
+        build:
+            context: ./nginx
+        ports:
+            - "80:80"
+        depends_on:
+            - nodejs
